@@ -10,6 +10,11 @@ type Message = {
   }
 }
 
+// 🔴 BURASI KRİTİK
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://burakgpt.onrender.com"
+
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -22,27 +27,45 @@ export function ChatInterface() {
 
     setLoading(true)
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username,
-        message: input
+    try {
+      const res = await fetch(`${API_URL}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          message: input
+        })
       })
-    })
 
-    const data = await res.json()
-
-    setMessages(prev => [
-      ...prev,
-      {
-        user: input,
-        bot: data
+      if (!res.ok) {
+        throw new Error("API hata verdi")
       }
-    ])
 
-    setInput("")
-    setLoading(false)
+      const data = await res.json()
+
+      setMessages(prev => [
+        ...prev,
+        {
+          user: input,
+          bot: data
+        }
+      ])
+
+      setInput("")
+    } catch (err) {
+      setMessages(prev => [
+        ...prev,
+        {
+          user: input,
+          bot: {
+            type: "text",
+            content: "⚠️ Sunucuya ulaşılamadı"
+          }
+        }
+      ])
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -61,6 +84,7 @@ export function ChatInterface() {
               <img
                 src={m.bot.content}
                 className="rounded-xl max-w-full"
+                width={320}
               />
             ) : (
               <div>{m.bot.content}</div>
