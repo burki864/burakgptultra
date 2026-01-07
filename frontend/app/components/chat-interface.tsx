@@ -10,11 +10,6 @@ type Message = {
   }
 }
 
-// 🔴 BURASI KRİTİK
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "https://burakgpt.onrender.com"
-
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -28,7 +23,8 @@ export function ChatInterface() {
     setLoading(true)
 
     try {
-      const res = await fetch(`${API_URL}/api/chat`, {
+      // 🔥 KRAL: Render ve local endpoint ile tam uyumlu
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
