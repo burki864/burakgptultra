@@ -111,3 +111,9 @@ def chat(req: ChatRequest):
     }).execute()
 
     return result
+
+
+# ✅ SADECE BU EKLENDİ
+@app.get("/")
+def root():
+    return {"status": "BurakGPT API running"}
