@@ -3,8 +3,8 @@
 import { useState } from "react"
 
 type Message = {
-  user: string
-  bot: string
+  role: "user" | "bot"
+  content: string
 }
 
 export function ChatInterface() {
@@ -15,42 +15,41 @@ export function ChatInterface() {
   async function send() {
     if (!input.trim() || loading) return
 
-    setLoading(true)
-
     const userMessage = input
     setInput("")
+    setLoading(true)
 
+    // 👤 Kullanıcı mesajı
     setMessages(prev => [
       ...prev,
-      { user: userMessage, bot: "⏳ BurakGPT düşünüyor..." }
+      { role: "user", content: userMessage }
     ])
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMessage
-        })
+        body: JSON.stringify({ message: userMessage })
       })
 
       if (!res.ok) throw new Error("API error")
 
       const data = await res.json()
 
+      // 🤖 GERÇEK backend cevabı
       setMessages(prev => [
-        ...prev.slice(0, -1),
+        ...prev,
         {
-          user: userMessage,
-          bot: data.reply || "⚠️ Cevap boş geldi"
+          role: "bot",
+          content: data.reply ?? "⚠️ Backend cevap döndürmedi"
         }
       ])
-    } catch (e) {
+    } catch (err) {
       setMessages(prev => [
-        ...prev.slice(0, -1),
+        ...prev,
         {
-          user: userMessage,
-          bot: "❌ Backend’e ulaşılamadı"
+          role: "bot",
+          content: "❌ Backend’e ulaşılamadı"
         }
       ])
     } finally {
@@ -62,16 +61,26 @@ export function ChatInterface() {
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">BurakGPT</h1>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {messages.map((m, i) => (
-          <div key={i} className="bg-card p-3 rounded-xl">
-            <div className="text-xs opacity-70 mb-1">Sen</div>
-            <div className="mb-2">{m.user}</div>
-
-            <div className="text-xs opacity-70 mb-1">BurakGPT</div>
-            <div>{m.bot}</div>
+          <div
+            key={i}
+            className={`p-3 rounded-xl ${
+              m.role === "user"
+                ? "bg-blue-500/20 text-right"
+                : "bg-card"
+            }`}
+          >
+            <div className="text-xs opacity-70 mb-1">
+              {m.role === "user" ? "Sen" : "BurakGPT"}
+            </div>
+            <div>{m.content}</div>
           </div>
         ))}
+
+        {loading && (
+          <div className="text-sm opacity-60">BurakGPT düşünüyor…</div>
+        )}
       </div>
 
       <div className="flex gap-2 mt-4">
@@ -80,7 +89,7 @@ export function ChatInterface() {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && send()}
           className="flex-1 bg-input p-2 rounded"
-          placeholder="Mesaj yaz..."
+          placeholder="Mesaj yaz…"
         />
         <button
           onClick={send}
