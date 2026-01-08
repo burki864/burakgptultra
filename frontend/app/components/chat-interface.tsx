@@ -2,14 +2,9 @@
 
 import { useState } from "react"
 
-type BotMessage = {
-  type: "text" | "image"
-  content: string
-}
-
 type Message = {
   user: string
-  bot: BotMessage
+  bot: string
 }
 
 export function ChatInterface() {
@@ -17,25 +12,17 @@ export function ChatInterface() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
-  const username = "guest"
-
   async function send() {
     if (!input.trim() || loading) return
 
-    const userMessage = input
-    setInput("")
     setLoading(true)
 
-    // 👑 Kullanıcı mesajı anında eklenir
+    const userMessage = input
+    setInput("")
+
     setMessages(prev => [
       ...prev,
-      {
-        user: userMessage,
-        bot: {
-          type: "text",
-          content: "..."
-        }
-      }
+      { user: userMessage, bot: "⏳ BurakGPT düşünüyor..." }
     ])
 
     try {
@@ -43,43 +30,29 @@ export function ChatInterface() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username,
           message: userMessage
         })
       })
 
-      if (!res.ok) {
-        throw new Error("API hata verdi")
-      }
+      if (!res.ok) throw new Error("API error")
 
       const data = await res.json()
 
-      const botReply: BotMessage = {
-        type: data?.type === "image" ? "image" : "text",
-        content: data?.content || "⚠️ Boş cevap geldi"
-      }
-
-      // 👑 Son mesajın bot kısmı güncellenir
-      setMessages(prev => {
-        const updated = [...prev]
-        updated[updated.length - 1] = {
+      setMessages(prev => [
+        ...prev.slice(0, -1),
+        {
           user: userMessage,
-          bot: botReply
+          bot: data.reply || "⚠️ Cevap boş geldi"
         }
-        return updated
-      })
-    } catch (err) {
-      setMessages(prev => {
-        const updated = [...prev]
-        updated[updated.length - 1] = {
+      ])
+    } catch (e) {
+      setMessages(prev => [
+        ...prev.slice(0, -1),
+        {
           user: userMessage,
-          bot: {
-            type: "text",
-            content: "⚠️ Sunucuya ulaşılamadı"
-          }
+          bot: "❌ Backend’e ulaşılamadı"
         }
-        return updated
-      })
+      ])
     } finally {
       setLoading(false)
     }
@@ -96,17 +69,7 @@ export function ChatInterface() {
             <div className="mb-2">{m.user}</div>
 
             <div className="text-xs opacity-70 mb-1">BurakGPT</div>
-
-            {m.bot.type === "image" ? (
-              <img
-                src={m.bot.content}
-                alt="AI görseli"
-                className="rounded-xl max-w-full"
-                width={320}
-              />
-            ) : (
-              <div>{m.bot.content}</div>
-            )}
+            <div>{m.bot}</div>
           </div>
         ))}
       </div>
@@ -124,7 +87,7 @@ export function ChatInterface() {
           disabled={loading}
           className="bg-primary text-black px-4 rounded"
         >
-          {loading ? "..." : "Gönder"}
+          Gönder
         </button>
       </div>
     </div>
