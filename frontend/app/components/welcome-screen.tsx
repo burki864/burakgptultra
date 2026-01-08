@@ -1,6 +1,7 @@
 "use client"
 
-import { Sparkles, Code, Lightbulb, FileText } from "lucide-react"
+import Image from "next/image"
+import { Code, Lightbulb, FileText } from "lucide-react"
 
 interface WelcomeScreenProps {
   onSuggestionClick: (content: string) => void
@@ -9,33 +10,46 @@ interface WelcomeScreenProps {
 const suggestions = [
   {
     icon: Code,
-    title: "Write code",
-    description: "Help me build a React component",
+    title: "Kod yaz",
+    description: "Bir React / frontend bileşeni yaz",
   },
   {
     icon: Lightbulb,
-    title: "Brainstorm ideas",
-    description: "Generate creative solutions",
+    title: "Fikir üret",
+    description: "Yaratıcı fikirler ve çözümler öner",
   },
   {
     icon: FileText,
-    title: "Summarize text",
-    description: "Condense long documents",
+    title: "Metin özetle",
+    description: "Uzun yazıları kısa ve net özetle",
   },
 ]
 
 export function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
   return (
     <div className="flex h-full flex-col items-center justify-center px-4 pb-32">
+      {/* LOGO */}
       <div className="mb-8 flex size-16 items-center justify-center rounded-2xl bg-accent/10">
-        <Sparkles className="size-8 text-accent" />
+        <Image
+          src="/logo.png"
+          alt="BurakGPT"
+          width={40}
+          height={40}
+          priority
+        />
       </div>
 
-      <h1 className="mb-3 text-center text-3xl font-semibold tracking-tight text-balance">Senin için ne yapabilirim</h1>
+      {/* BAŞLIK */}
+      <h1 className="mb-3 text-center text-3xl font-semibold tracking-tight text-balance">
+        BurakGPT’ye hoş geldin
+      </h1>
+
+      {/* AÇIKLAMA */}
       <p className="mb-12 max-w-md text-center text-muted-foreground text-balance">
-        Ben burak gpt cevap veririm söyle şimdi
+        Ben BurakGPT. Sorunu yaz, kod iste, fikir al ya da sohbet et.
       </p>
 
+      {/* ÖNERİ KARTLARI */}
       <div className="grid w-full max-w-2xl gap-3 sm:grid-cols-3">
         {suggestions.map((suggestion) => (
           <button
@@ -46,9 +60,14 @@ export function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
             <div className="flex size-10 items-center justify-center rounded-lg bg-secondary transition-colors group-hover:bg-accent/20">
               <suggestion.icon className="size-5 text-muted-foreground transition-colors group-hover:text-accent" />
             </div>
+
             <div>
-              <h3 className="font-medium text-foreground">{suggestion.title}</h3>
-              <p className="text-sm text-muted-foreground">{suggestion.description}</p>
+              <h3 className="font-medium text-foreground">
+                {suggestion.title}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {suggestion.description}
+              </p>
             </div>
           </button>
         ))}
