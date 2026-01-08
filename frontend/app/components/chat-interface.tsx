@@ -4,6 +4,7 @@ import { useState } from "react"
 
 type Message = {
   role: "user" | "bot"
+  type: "text" | "image"
   content: string
 }
 
@@ -19,29 +20,35 @@ export function ChatInterface() {
     setInput("")
     setLoading(true)
 
-    // 👤 Kullanıcı mesajı
+    // 👤 kullanıcı mesajı
     setMessages(prev => [
       ...prev,
-      { role: "user", content: userMessage }
+      { role: "user", type: "text", content: userMessage }
     ])
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage })
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: "burak", // ister auth'tan al
+          message: userMessage
+        })
       })
 
       if (!res.ok) throw new Error("API error")
 
       const data = await res.json()
 
-      // 🤖 GERÇEK backend cevabı
+      // 🤖 GERÇEK BACKEND CEVABI
       setMessages(prev => [
         ...prev,
         {
           role: "bot",
-          content: data.reply ?? "⚠️ Backend cevap döndürmedi"
+          type: data.type,
+          content: data.content
         }
       ])
     } catch (err) {
@@ -49,6 +56,7 @@ export function ChatInterface() {
         ...prev,
         {
           role: "bot",
+          type: "text",
           content: "❌ Backend’e ulaşılamadı"
         }
       ])
@@ -74,12 +82,25 @@ export function ChatInterface() {
             <div className="text-xs opacity-70 mb-1">
               {m.role === "user" ? "Sen" : "BurakGPT"}
             </div>
-            <div>{m.content}</div>
+
+            {/* TEXT */}
+            {m.type === "text" && <div>{m.content}</div>}
+
+            {/* IMAGE */}
+            {m.type === "image" && (
+              <img
+                src={m.content}
+                alt="AI Görsel"
+                className="rounded-lg max-w-full"
+              />
+            )}
           </div>
         ))}
 
         {loading && (
-          <div className="text-sm opacity-60">BurakGPT düşünüyor…</div>
+          <div className="text-sm opacity-60">
+            BurakGPT düşünüyor…
+          </div>
         )}
       </div>
 
