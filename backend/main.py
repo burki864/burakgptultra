@@ -92,7 +92,6 @@ def ai_response(prompt: str) -> dict:
 # ======================
 # API
 # ======================
-
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     if is_user_banned(req.username):
@@ -111,7 +110,6 @@ def chat(req: ChatRequest):
     }).execute()
 
     return result
-
 
 # ✅ SADECE BU EKLENDİ
 @app.get("/")
