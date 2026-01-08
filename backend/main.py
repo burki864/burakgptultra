@@ -2,6 +2,7 @@ import os
 import requests
 from datetime import datetime
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import create_client, Client
 from openai import OpenAI
@@ -14,14 +15,27 @@ from gradio_client import Client as GradioClient
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
 USE_LOCAL_LLM = os.getenv("USE_LOCAL_LLM", "false").lower() == "true"
 LOCAL_LLM_URL = os.getenv("LOCAL_LLM_URL")
 
 # ======================
-# CLIENTS
+# APP
 # ======================
 
-app = FastAPI()
+app = FastAPI(title="BurakGPT API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ======================
+# CLIENTS
+# ======================
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
@@ -41,14 +55,23 @@ class ChatRequest(BaseModel):
 
 def is_user_banned(username: str) -> bool:
     try:
-        res = supabase.table("users").select("banned_until").eq("username", username).single().execute()
-        if not res.data:
+        res = (
+            supabase
+            .table("users")
+            .select("banned_until")
+            .eq("username", username)
+            .single()
+            .execute()
+        )
+
+        if not res.data or not res.data.get("banned_until"):
             return False
 
-        banned_until = res.data.get("banned_until")
-        return banned_until and datetime.utcnow() < datetime.fromisoformat(
-            banned_until.replace("Z", "")
+        banned_until = datetime.fromisoformat(
+            res.data["banned_until"].replace("Z", "")
         )
+        return datetime.utcnow() < banned_until
+
     except Exception:
         return False
 
@@ -62,7 +85,7 @@ def local_llm(prompt: str) -> str:
         json={
             "model": "local-model",
             "messages": [
-                {"role": "system", "content": "Sen BurakGPT'sin. Türkçe, net cevap ver."},
+                {"role": "system", "content": "Sen BurakGPT'sin. Türkçe ve net cevap ver."},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.7,
@@ -73,10 +96,12 @@ def local_llm(prompt: str) -> str:
     return r.json()["choices"][0]["message"]["content"]
 
 def ai_response(prompt: str) -> dict:
+    # Görsel isteği
     if "çiz" in prompt or "görsel" in prompt:
         img = qwen_image.predict(prompt)
         return {"type": "image", "content": img}
 
+    # OpenAI
     if not USE_LOCAL_LLM and openai_client:
         res = openai_client.chat.completions.create(
             model="gpt-4o-mini",
@@ -85,18 +110,27 @@ def ai_response(prompt: str) -> dict:
                 {"role": "user", "content": prompt}
             ]
         )
-        return {"type": "text", "content": res.choices[0].message.content}
+        return {
+            "type": "text",
+            "content": res.choices[0].message.content
+        }
 
-    return {"type": "text", "content": local_llm(prompt)}
+    # Local LLM
+    return {
+        "type": "text",
+        "content": local_llm(prompt)
+    }
 
 # ======================
 # API
 # ======================
+
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     if is_user_banned(req.username):
         return {"type": "text", "content": "🚫 Banlısın"}
 
+    # kullanıcıyı garantiye al
     supabase.table("users").upsert({
         "username": req.username
     }).execute()
@@ -106,21 +140,20 @@ def chat(req: ChatRequest):
     supabase.table("messages").insert({
         "username": req.username,
         "message": req.message,
-        "reply": str(result)
+        "reply": result["content"],
+        "type": result["type"]
     }).execute()
 
     return result
 
-# ✅ SADECE BU EKLENDİ
+# ======================
+# HEALTH
+# ======================
+
 @app.get("/")
 def root():
-    return {"status": "BurakGPT API running"}
-from fastapi.middleware.cors import CORSMiddleware
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    return {
+        "status": "ok",
+        "app": "BurakGPT",
+        "engine": "local" if USE_LOCAL_LLM else "openai"
+    }
