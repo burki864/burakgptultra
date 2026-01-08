@@ -2,12 +2,14 @@
 
 import { useState } from "react"
 
+type BotMessage = {
+  type: "text" | "image"
+  content: string
+}
+
 type Message = {
   user: string
-  bot: {
-    type: "text" | "image"
-    content: string
-  }
+  bot: BotMessage
 }
 
 export function ChatInterface() {
@@ -20,16 +22,29 @@ export function ChatInterface() {
   async function send() {
     if (!input.trim() || loading) return
 
+    const userMessage = input
+    setInput("")
     setLoading(true)
 
+    // 👑 Kullanıcı mesajı anında eklenir
+    setMessages(prev => [
+      ...prev,
+      {
+        user: userMessage,
+        bot: {
+          type: "text",
+          content: "..."
+        }
+      }
+    ])
+
     try {
-      // 🔥 KRAL: Render ve local endpoint ile tam uyumlu
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username,
-          message: input
+          message: userMessage
         })
       })
 
@@ -39,26 +54,32 @@ export function ChatInterface() {
 
       const data = await res.json()
 
-      setMessages(prev => [
-        ...prev,
-        {
-          user: input,
-          bot: data
-        }
-      ])
+      const botReply: BotMessage = {
+        type: data?.type === "image" ? "image" : "text",
+        content: data?.content || "⚠️ Boş cevap geldi"
+      }
 
-      setInput("")
+      // 👑 Son mesajın bot kısmı güncellenir
+      setMessages(prev => {
+        const updated = [...prev]
+        updated[updated.length - 1] = {
+          user: userMessage,
+          bot: botReply
+        }
+        return updated
+      })
     } catch (err) {
-      setMessages(prev => [
-        ...prev,
-        {
-          user: input,
+      setMessages(prev => {
+        const updated = [...prev]
+        updated[updated.length - 1] = {
+          user: userMessage,
           bot: {
             type: "text",
             content: "⚠️ Sunucuya ulaşılamadı"
           }
         }
-      ])
+        return updated
+      })
     } finally {
       setLoading(false)
     }
@@ -79,6 +100,7 @@ export function ChatInterface() {
             {m.bot.type === "image" ? (
               <img
                 src={m.bot.content}
+                alt="AI görseli"
                 className="rounded-xl max-w-full"
                 width={320}
               />
