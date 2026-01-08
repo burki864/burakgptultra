@@ -31,9 +31,9 @@ export function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
         <Sparkles className="size-8 text-accent" />
       </div>
 
-      <h1 className="mb-3 text-center text-3xl font-semibold tracking-tight text-balance">How can I help you today?</h1>
+      <h1 className="mb-3 text-center text-3xl font-semibold tracking-tight text-balance">Senin için ne yapabilirim</h1>
       <p className="mb-12 max-w-md text-center text-muted-foreground text-balance">
-        I'm Nova, your AI assistant. Ask me anything or choose a suggestion below.
+        Ben burak gpt cevap veririm söyle şimdi
       </p>
 
       <div className="grid w-full max-w-2xl gap-3 sm:grid-cols-3">
