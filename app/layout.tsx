@@ -9,6 +9,7 @@ const _inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Nova AI",
   description: "Your intelligent AI assistant",
+    generator: 'v0.app'
 }
 
 export const viewport: Viewport = {

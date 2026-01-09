@@ -1,7 +1,0 @@
-fastapi
-uvicorn
-supabase
-openai
-gradio-client
-requests
-pydantic

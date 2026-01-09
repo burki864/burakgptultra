@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: burakgpt
-    env: python
-    buildCommand: |
-      curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-      apt-get install -y nodejs
-      pip install -r backend/requirements.txt
-    startCommand: ./start.sh
